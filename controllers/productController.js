@@ -5,22 +5,18 @@ const getProducts = async(req, res) => {
 };
 
 const registerProduct = async(req, res) => {
+    console.log(req.body);
     const { name, store } = req.body;
-
+    console.log(req.body)
     const productExist = await Product.findOne({name: name, store: store});
 
     if(productExist){
-        return res.json({msg: 'Ya existe este producto', productExist});
+        return res.status(400).json({msg: 'Ya existe este producto'});
     }
 
-    try {
-        const product = new Product(req.body);
-        const productSaved = await product.save();
-        return res.json(productSaved);    
-    } catch (error) {
-        console.log(error);
-    }
-    
+    const product = new Product(req.body);
+    await product.save();
+    return res.status(200).json({msg: "Producto creado correctamente"});   
 };
 
 const editProduct = async(req, res) => {

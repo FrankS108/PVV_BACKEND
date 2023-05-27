@@ -8,18 +8,39 @@ const getAllEnterprises = async(req, res) => {
 }
 
 const getEnterprise = async(req, res) => {
-    const enterprise = await Enterprise.findById(req.params.id).populate("collaborators");
-    const stores = await Store.find().where('enterprise').equals(req.params.id);
+    const { id } = req.params;
+    
+    /*
+    if(!id || id === null || typeof(id) === 'undefined'){
+        const error = new Error('Empresa no encontrada');
+        return res.status(404).json({msg: error.message});
+    }
+    */
+    try {
+        const enterprise = await Enterprise.findById(req.params.id).populate("collaborators").catch((err) => {
+            console.log(err)
+        });
+        if(!enterprise){
+            const error = new Error('Empresa no encontrada');
+            console.log(error)
+            return res.status(404).json({msg: error.message});
+        }
+        const stores = await Store.find().where('enterprise').equals(id);
 
-    return res.json({
-        enterprise,
-        stores
-    });
+        return res.status(200).json({
+            enterprise,
+            stores
+        });
+    } catch (error) {
+        console.log(error);
+    }
+
+    
 }
 
 const addEnterprise = async(req, res) => {
     const { name } = req.body;
-    const enterpriseExist = await Enterprise.findOne({name: name});
+    const enterpriseExist = await Enterprise.findOne({name: name}).where('creator').equals(req.user._id);
 
     if(enterpriseExist){
         const error = new Error('El nombre ya esta en uso');
@@ -30,7 +51,7 @@ const addEnterprise = async(req, res) => {
         const enterprise = new Enterprise(req.body);
         enterprise.creator = req.user._id;
         const enterpriseStored = await enterprise.save();
-        return res.json({msg: "Empresa registrada correctamente", enterpriseStored});
+        return res.status(200).json({msg: "Empresa registrada correctamente", enterpriseStored});
     }catch(error){
         console.log(error);
     }
@@ -38,21 +59,36 @@ const addEnterprise = async(req, res) => {
 
 const deleteEnterprise = async(req, res) => {
     const { id } = req. body;
-    await Enterprise.findByIdAndDelete(id);
-    return res.json({msg: "Empresa eliminada correctamente"});
+    try {
+        await Enterprise.findByIdAndDelete(id).catch((err) => {
+            console.log(err)
+        });
+        return res.status(200).json({msg: "Empresa eliminada correctamente"});
+    } catch (error) {
+        console.log(error)
+    }
 };
 
 const editEnterprise = async(req, res) => {
     const { name, phoneNumber, adress, email } = req.body;
-    await Enterprise.findByIdAndUpdate(req.params.id, {
-        name, phoneNumber, adress, email
-    })
-    return res.json({msg: "Empresa actualizada correctamente"});
+    try {
+        await Enterprise.findByIdAndUpdate(req.params.id, {
+            name, phoneNumber, adress, email
+        }).catch((err) => {
+            console.log(err)
+        });
+
+        return res.status(200).json({msg: "Empresa actualizada correctamente"});
+    } catch (error) {
+        console.log(error)
+    }
 };
 
 const addCollaborators = async(req, res) => {
     const { email } = req.body;
-    const enterprise = await Enterprise.findById(req.params.id);
+    const enterprise = await Enterprise.findById(req.params.id).catch((err) => {
+            console.log(err)
+    });
 
     console.log(enterprise)
 
@@ -93,11 +129,67 @@ const addCollaborators = async(req, res) => {
     res.json({msg: "Colaborador agregado"});
 }
 
+const deleteCollaborator = async(req, res) => {
+    //Obtenemos el id
+    const { id } = req.body;
+
+    //Obtenemos la empresa
+    const enterprise = await Enterprise.findById(req.params.id);
+
+    //Si no existe
+    if(!enterprise){
+        const error = new Error('Empresa no encontrada');
+        return res.status(404).json({msg: error.message});
+    }
+
+    //Si no es el creador
+    if(enterprise.creator.toString() !== req.user._id.toString()){
+        const error = new Error('Acción no válida');
+        return res.status(404).json({msg: error.message});
+    }
+
+    // Verificar si es creador de la empresa
+    if(enterprise.creator.toString() !== req.user._id.toString()){
+        const error = new Error('Acción no válida');
+        return res.status(404).json({msg: error.message});
+    }
+
+    enterprise.collaborators.pull(id);
+    await enterprise.save();
+    res.json({msg: "Eliminado correctamente"});
+}
+
+const deleteStore = async(req, res) => {
+    //Obtenemos el id
+    const { id } = req.body;
+
+    //Obtenemos la empresa
+    const enterprise = await Enterprise.findById(req.params.id);
+
+    //Si no existe la empresa
+    if(!enterprise){
+        const error = new Error('Empresa no encontrada');
+        return res.status(404).json({msg: error.message});
+    }
+
+    //Si no es el creador
+    if(enterprise.creator.toString() !== req.user._id.toString()){
+        const error = new Error('Acción no válida');
+        return res.status(404).json({msg: error.message});
+    }
+
+    //Obtenemos las sucursales
+    await Store.findByIdAndDelete(id);
+    res.status(200).json({msg: "Eliminado correctamente"});
+}
+
 export{
     addEnterprise,
     deleteEnterprise,
     editEnterprise,
     getAllEnterprises,
     getEnterprise,
-    addCollaborators
+    addCollaborators,
+    deleteCollaborator,
+    deleteStore
 };
