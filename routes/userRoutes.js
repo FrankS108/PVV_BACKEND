@@ -1,7 +1,6 @@
 import express from "express";
 import { register, authenticate, confirm, resetPassword, verifyToken, newPassword, profile } from '../controllers/userController.js';
 import checkAuth from "../middleware/checkAuth.js";
-import { checkHexToken }from "../helpers/hexId.js";
 
 const router = express.Router();
 

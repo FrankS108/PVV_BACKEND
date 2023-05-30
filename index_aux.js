@@ -8,7 +8,6 @@ import tagRoutes from "./routes/tagRoutes.js";
 import storeRoutes from "./routes/storeRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 
-
 const app = express();
 app.use(express.json());
 dotenv.config();
@@ -26,8 +25,6 @@ const corsOptions = {
     },
 };
 
-
-
 app.use(cors(corsOptions));
 
 // Routing
@@ -37,7 +34,7 @@ app.use("/api/tag", tagRoutes);
 app.use("/api/store", storeRoutes);
 app.use("/api/product", productRoutes);
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 4001;
 
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);

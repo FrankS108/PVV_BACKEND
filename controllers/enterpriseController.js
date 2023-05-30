@@ -3,8 +3,18 @@ import Store from "../models/Store.js";
 import User from "../models/User.js";
 
 const getAllEnterprises = async(req, res) => {
-    const allEnterprises = await Enterprise.find().where('creator').equals(req.user);
-    return res.json(allEnterprises);
+    try {
+        const allEnterprises = await Enterprise.find({
+            '$or':[
+                {'collaborators': { $in: req.user}},
+                {'creator': { $in: req.user}},
+            ]
+        })
+        res.status(200).json(allEnterprises);
+    } catch (error) {
+        console.log(error)
+        res.status(404).json({msg: "Empresas no encontradas."})
+    }
 }
 
 const getEnterprise = async(req, res) => {
@@ -154,9 +164,13 @@ const deleteCollaborator = async(req, res) => {
         return res.status(404).json({msg: error.message});
     }
 
-    enterprise.collaborators.pull(id);
-    await enterprise.save();
-    res.json({msg: "Eliminado correctamente"});
+    try {
+        enterprise.collaborators.pull(id);
+        await enterprise.save();
+        res.status(200).json({msg: "Eliminado correctamente"});
+    } catch (error) {
+        res.status(400).json({msg: "No se ha podido eliminar"});
+    }
 }
 
 const deleteStore = async(req, res) => {
